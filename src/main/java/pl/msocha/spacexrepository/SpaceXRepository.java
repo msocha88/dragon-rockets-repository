@@ -1,13 +1,19 @@
 package pl.msocha.spacexrepository;
 
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import pl.msocha.spacexrepository.model.Mission;
 import pl.msocha.spacexrepository.model.MissionStatus;
+import pl.msocha.spacexrepository.model.MissionSummary;
 import pl.msocha.spacexrepository.model.Rocket;
 import pl.msocha.spacexrepository.model.RocketStatus;
+import pl.msocha.spacexrepository.model.RocketSummary;
 
 @RequiredArgsConstructor
 public class SpaceXRepository {
@@ -132,6 +138,14 @@ public class SpaceXRepository {
 				}
 
 				mission.setStatus(newStatus);
+		}
+
+		/**
+		 * Creates Missions summary, that includes Mission name, status and names and statuses of Rockets assigned to Mission.
+		 * @return MissionSummary
+		 */
+		public List<MissionSummary> getMissionsSummary() {
+				return Collections.emptyList();
 		}
 
 		private void validateEnded(Mission mission) {
