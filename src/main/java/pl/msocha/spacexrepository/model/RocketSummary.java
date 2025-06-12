@@ -10,6 +10,6 @@ import lombok.Getter;
 @AllArgsConstructor
 public class RocketSummary {
 
-		final String name;
-		final RocketStatus status;
+		final String rocketName;
+		final RocketStatus rocketStatus;
 }

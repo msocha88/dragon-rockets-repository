@@ -358,4 +358,117 @@ public class SpaceXRepositoryTest {
 						assertThat(exception.getMessage()).isEqualTo("Rocket with id [%s] does not exists".formatted(nonExistingRocketId));
 				}
 		}
+
+		@Nested
+		@DisplayName("Mission Summary Tests")
+		class MissionSummaryTests {
+
+				@Test
+				@DisplayName("Should return missions summary ordered by rocket count desc, then name desc")
+				void shouldReturnMissionsSummaryOrderedByRocketCountDescThenNameDesc() {
+						//given
+						
+						//missions
+						tested.addMission("Mars");
+						var luna1MissionId = tested.addMission("Luna1");
+						var doubleLandingMissionId = tested.addMission("Double Landing");
+						var transitMissionId = tested.addMission("Transit");
+						tested.addMission("Luna2");
+						var verticalLandingMissionId = tested.addMission("Vertical Landing");
+
+						//dragons
+						var dragon1Id = tested.addRocket("Dragon 1");
+						var dragon2Id = tested.addRocket("Dragon 2");
+						var redDragonId = tested.addRocket("Red Dragon");
+						var dragonXLId = tested.addRocket("Dragon XL");
+						var falconHeavyId = tested.addRocket("Falcon Heavy");
+
+						//Set up Transit mission (3 rockets, IN_PROGRESS)
+						tested.assignRocketToMission(redDragonId, transitMissionId);
+						tested.assignRocketToMission(dragonXLId, transitMissionId);
+						tested.assignRocketToMission(falconHeavyId, transitMissionId);
+						tested.setRocketStatus(dragonXLId, RocketStatus.IN_SPACE);
+						tested.setRocketStatus(falconHeavyId, RocketStatus.IN_SPACE);
+						tested.setMissionStatus(transitMissionId, MissionStatus.IN_PROGRESS);
+
+						//Set up Luna1 mission (2 rockets, PENDING)
+						tested.assignRocketToMission(dragon1Id, luna1MissionId);
+						tested.assignRocketToMission(dragon2Id, luna1MissionId);
+						tested.setRocketStatus(dragon1Id, RocketStatus.IN_SPACE);
+						tested.setRocketStatus(dragon2Id, RocketStatus.IN_REPAIR);
+
+						//Set up ended missions
+						tested.setMissionStatus(verticalLandingMissionId, MissionStatus.ENDED);
+						tested.setMissionStatus(doubleLandingMissionId, MissionStatus.ENDED);
+
+						//when
+						var summary = tested.getMissionsSummary();
+
+						//then
+						assertThat(summary).hasSize(6);
+
+						//Transit – In progress – Dragons: 3
+						assertThat(summary.get(0).getMissionName()).isEqualTo("Transit");
+						assertThat(summary.get(0).getMissionStatus()).isEqualTo(MissionStatus.IN_PROGRESS);
+						assertThat(summary.get(0).getRockets().size()).isEqualTo(3);
+
+						//Luna1 – Pending – Dragons: 2
+						assertThat(summary.get(1).getMissionName()).isEqualTo("Luna1");
+						assertThat(summary.get(1).getMissionStatus()).isEqualTo(MissionStatus.PENDING);
+						assertThat(summary.get(1).getRockets().size()).isEqualTo(2);
+
+						//Missions with 0 rockets should be ordered by name descending
+						//Vertical Landing – Ended – Dragons: 0
+						assertThat(summary.get(2).getMissionName()).isEqualTo("Vertical Landing");
+						// Mars – Scheduled – Dragons: 0
+						assertThat(summary.get(3).getMissionName()).isEqualTo("Mars");
+						// Luna2 – Scheduled – Dragons: 0
+						assertThat(summary.get(4).getMissionName()).isEqualTo("Luna2");
+						// Double Landing – Ended – Dragons: 0
+						assertThat(summary.get(5).getMissionName()).isEqualTo("Double Landing");
+						
+				}
+
+				@Test
+				@DisplayName("Should include rocket details in mission summary")
+				void shouldIncludeRocketDetailsInMissionSummary() {
+						// Given
+						var missionId = tested.addMission("Transit");
+						var rocket1Id = tested.addRocket("Red Dragon");
+						var rocket2Id = tested.addRocket("Dragon XL");
+
+						tested.assignRocketToMission(rocket1Id, missionId);
+						tested.assignRocketToMission(rocket2Id, missionId);
+						tested.setRocketStatus(rocket2Id, RocketStatus.IN_REPAIR);
+
+						// When
+						var summary = tested.getMissionsSummary();
+
+						// Then
+						assertThat(summary.size()).isEqualTo(1);
+						var missionSummary = summary.get(0);
+
+						assertThat(missionSummary.getRockets().size()).isEqualTo(2);
+
+						// Verify rocket details are included
+						var rockets = missionSummary.getRockets();
+						assertThat(rockets.stream()
+							.anyMatch(r -> r.getRocketName().equals("Red Dragon") && r.getRocketStatus() == RocketStatus.IN_SPACE)
+						).isTrue();
+						assertThat(rockets.stream()
+							.anyMatch(r -> r.getRocketName().equals("Dragon XL") && r.getRocketStatus() == RocketStatus.IN_REPAIR)
+						).isTrue();
+				}
+
+				@Test
+				@DisplayName("Should handle empty repository")
+				void shouldHandleEmptyRepository() {
+						// When
+						var summary = tested.getMissionsSummary();
+
+						// Then
+						assertThat(summary).isEmpty();
+				}
+		}
+		
 }
