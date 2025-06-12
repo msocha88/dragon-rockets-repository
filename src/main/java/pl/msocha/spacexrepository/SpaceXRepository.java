@@ -79,17 +79,21 @@ public class SpaceXRepository {
 						throw new IllegalStateException("Mission is already ended");
 				}
 
-				if (rocket.getMissionId() != null) {
-						throw new RuntimeException("Rocket is already assigned to mission");
-				}
+				addRocketIfMissionExists(rocket, mission);
 
-				mission.addRocket(rocket.getId());
 				rocket.setMissionId(mission.getId());
 				rocket.setStatus(RocketStatus.IN_SPACE);
 		}
 
+		private synchronized void addRocketIfMissionExists(Rocket rocket, Mission mission) {
+				if (rocket.getMissionId() != null) {
+						throw new IllegalStateException("Rocket is already assigned to mission");
+				}
+				mission.addRocket(rocket.getId());
+		}
+
 		/**
-		 * Changest status of a Rocket.
+		 * Changes status of a Rocket.
 		 * Changing Rocket status may affect status of Mission, that Rocket is assigned to.
 		 * @param rocketId Identifier of Rocket to change status
 		 * @param newStatus New status of a Rocket
@@ -108,8 +112,10 @@ public class SpaceXRepository {
 				rocket.setStatus(newStatus);
 
 				if (newStatus == RocketStatus.IN_REPAIR) {
-						missions.get(rocket.getMissionId())
-							.setStatus(MissionStatus.PENDING);
+						var mission = missions.get(rocket.getMissionId());
+						if (mission != null) {
+							mission.setStatus(MissionStatus.PENDING);
+						}
 				}
 
 		}
@@ -139,7 +145,7 @@ public class SpaceXRepository {
 		}
 
 		/**
-		 * Creates Missions summary, that includes Mission name, status and names and statuses of Rockets assigned to Mission.
+		 * Creates summary of a Missions, that includes Mission name, status and names and statuses of Rockets assigned to Mission.
 		 * @return MissionSummary
 		 */
 		public List<MissionSummary> getMissionsSummary() {
@@ -151,13 +157,13 @@ public class SpaceXRepository {
 
 		private void validateEnded(Mission mission) {
 				if (!mission.getRocketIds().isEmpty()) {
-						throw new IllegalStateException("Mission do not have still Rockets assigned");
+						throw new IllegalStateException("Mission still has assigned rockets");
 				}
 		}
 
 		private void validateInProgress(Mission mission) {
 				if (mission.getRocketIds().isEmpty()) {
-						throw new IllegalStateException("Mission do not have any Rockets assigned");
+						throw new IllegalStateException("Mission does not have any Rockets assigned");
 				} else if (hasRocketsInRepair(mission)) {
 						throw new IllegalStateException("In progress Mission can't have rockets wit IN_REPAIR status");
 				}

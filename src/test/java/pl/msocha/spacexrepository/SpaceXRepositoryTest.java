@@ -2,6 +2,7 @@ package pl.msocha.spacexrepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchException;
+import static org.assertj.core.api.Assertions.tuple;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -84,6 +85,9 @@ public class SpaceXRepositoryTest {
 
 						//when
 						tested.setRocketStatus(rocketId, newStatus);
+
+						//then
+						assertThat(rocketMap.get(rocketId).getStatus()).isEqualTo(newStatus);
 				}
 
 				@Test
@@ -182,7 +186,7 @@ public class SpaceXRepositoryTest {
 						onGroundRocket.setStatus(RocketStatus.ON_GROUND);
 
 						var inSpaceRocket = new Rocket("rocket3", "inSpaceRocket");
-						onGroundRocket.setStatus(RocketStatus.IN_SPACE);
+						inSpaceRocket.setStatus(RocketStatus.IN_SPACE);
 
 						return Stream.of(
 							Arguments.of(MissionStatus.SCHEDULED, Set.of()),
@@ -232,7 +236,7 @@ public class SpaceXRepositoryTest {
 
 						//then
 						assertThat(exception).isInstanceOf(IllegalStateException.class);
-						assertThat(exception.getMessage()).isEqualTo("Mission do not have any Rockets assigned");
+						assertThat(exception.getMessage()).isEqualTo("Mission does not have any Rockets assigned");
 				}
 
 				@Test
@@ -255,7 +259,7 @@ public class SpaceXRepositoryTest {
 
 						//then
 						assertThat(exception).isInstanceOf(IllegalStateException.class);
-						assertThat(exception.getMessage()).isEqualTo("Mission do not have still Rockets assigned");
+						assertThat(exception.getMessage()).isEqualTo("Mission still has assigned rockets");
 				}
 		}
 
@@ -445,19 +449,14 @@ public class SpaceXRepositoryTest {
 						var summary = tested.getMissionsSummary();
 
 						// Then
-						assertThat(summary.size()).isEqualTo(1);
+						assertThat(summary).hasSize(1);
 						var missionSummary = summary.get(0);
-
-						assertThat(missionSummary.getRockets().size()).isEqualTo(2);
-
-						// Verify rocket details are included
-						var rockets = missionSummary.getRockets();
-						assertThat(rockets.stream()
-							.anyMatch(r -> r.getRocketName().equals("Red Dragon") && r.getRocketStatus() == RocketStatus.IN_SPACE)
-						).isTrue();
-						assertThat(rockets.stream()
-							.anyMatch(r -> r.getRocketName().equals("Dragon XL") && r.getRocketStatus() == RocketStatus.IN_REPAIR)
-						).isTrue();
+						assertThat(missionSummary.getRockets())
+							.extracting("rocketName", "rocketStatus")
+							.containsExactlyInAnyOrder(
+								tuple("Red Dragon", RocketStatus.IN_SPACE),
+								tuple("Dragon XL", RocketStatus.IN_REPAIR)
+							);
 				}
 
 				@Test
