@@ -1,7 +1,5 @@
 package pl.msocha.spacexrepository;
 
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentMap;
@@ -145,7 +143,10 @@ public class SpaceXRepository {
 		 * @return MissionSummary
 		 */
 		public List<MissionSummary> getMissionsSummary() {
-				return Collections.emptyList();
+				return missions.values().stream()
+					.sorted(this::compareMissionsForSummary)
+					.map(this::createMissionSummary)
+					.toList();
 		}
 
 		private void validateEnded(Mission mission) {
@@ -175,4 +176,20 @@ public class SpaceXRepository {
 				return identifier == null || identifier.isEmpty();
 		}
 
+		private int compareMissionsForSummary(Mission m1, Mission m2) {
+				int rocketCountCompare = Integer.compare(m2.getRocketIds().size(), m1.getRocketIds().size());
+				if (rocketCountCompare != 0) {
+						return rocketCountCompare;
+				}
+				// For same rocket count, sort by name in descending alphabetical order
+				return m2.getName().compareTo(m1.getName());		}
+
+		private MissionSummary createMissionSummary(Mission mission) {
+				var rocketsSummary = mission.getRocketIds().stream()
+					.map(rockets::get)
+					.map(rocket -> new RocketSummary(rocket.getName(), rocket.getStatus()))
+					.collect(Collectors.toSet());
+
+				return new MissionSummary(mission.getName(), rocketsSummary, mission.getStatus());
+		}
 }
